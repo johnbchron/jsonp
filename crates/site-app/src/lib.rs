@@ -1,6 +1,28 @@
-use leptos::*;
+use leptos::{config::LeptosOptions, prelude::*};
 use leptos_meta::*;
-use leptos_router::{Route, Router, Routes};
+use leptos_router::{
+  components::{Route, Router, Routes},
+  path,
+};
+
+pub fn shell(options: LeptosOptions) -> impl IntoView {
+  view! {
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <AutoReload options=options.clone()/>
+        <HydrationScripts options=options.clone() islands=true/>
+        <HashedStylesheet options=options.clone() id="leptos"/>
+        <link rel="shortcut icon" type="image/ico" href="/favicon.ico"/>
+      </head>
+      <body>
+        <App/>
+      </body>
+    </html>
+  }
+}
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -8,16 +30,9 @@ pub fn App() -> impl IntoView {
   provide_meta_context();
 
   view! {
-    <Stylesheet id="leptos" href="/pkg/site.css"/>
-
-    <Title text="A template app"/>
-    <Html lang="en" />
-    <Meta charset="utf-8"/>
-    <Meta name="viewport" content="width=device-width, initial-scale=1"/>
-
     <Router>
-      <Routes>
-        <Route path="/" view=HomePage />
+      <Routes fallback=|| "Page not found.".into_view()>
+        <Route path=path!("/") view=HomePage />
       </Routes>
     </Router>
   }
@@ -34,7 +49,7 @@ pub fn HomePage() -> impl IntoView {
 
 #[island]
 pub fn TestIsland() -> impl IntoView {
-  let (count, set_count) = create_signal(0);
+  let (count, set_count) = signal(0);
 
   view! {
     <div>

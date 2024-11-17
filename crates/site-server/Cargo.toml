@@ -8,9 +8,9 @@ edition = "2021"
 [dependencies]
 site-app = { path = "../site-app", default-features = false, features = ["ssr"] }
 
-leptos = { workspace = true, features = [ "ssr", "tracing" ]}
+leptos = { workspace = true, features = [ "ssr" ]}
 leptos_axum.workspace = true
-leptos_router.workspace = true
+# leptos_router.workspace = true
 
 axum.workspace = true
 color-eyre.workspace = true
