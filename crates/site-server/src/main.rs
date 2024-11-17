@@ -4,27 +4,30 @@ use leptos::prelude::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use site_app::{shell, App};
 use tower_http::compression::CompressionLayer;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
   color_eyre::install().expect("Failed to install color_eyre");
 
-  let _filter = tracing_subscriber::EnvFilter::try_from_default_env()
-    .unwrap_or(tracing_subscriber::EnvFilter::new(
-      "info,site_server=debug,site_app=debug",
-    ));
+  let filter_layer = tracing_subscriber::EnvFilter::try_from_default_env()
+    .unwrap_or(tracing_subscriber::EnvFilter::new("info"));
+  let fmt_layer = tracing_subscriber::fmt::layer()
+    .with_target(false)
+    .with_writer(std::io::stderr);
+  let registry = tracing_subscriber::registry()
+    .with(filter_layer)
+    .with(fmt_layer);
 
   #[cfg(not(feature = "chrome-tracing"))]
   {
-    tracing_subscriber::fmt().with_env_filter(_filter).init();
+    registry.init();
   }
   #[cfg(feature = "chrome-tracing")]
-  let _guard = {
-    use tracing_subscriber::prelude::*;
-
+  let guard = {
     let (chrome_layer, guard) =
       tracing_chrome::ChromeLayerBuilder::new().build();
-    tracing_subscriber::registry().with(chrome_layer).init();
+    registry.with(chrome_layer).try_init()?;
     guard
   };
 
@@ -49,15 +52,20 @@ async fn main() -> Result<()> {
     .layer(CompressionLayer::new())
     .with_state(leptos_options);
 
-  // run our app with hyper
-  // `axum::Server` is a re-export of `hyper::Server`
-  log::info!("listening on http://{}", &addr);
-  axum::serve(
-    tokio::net::TcpListener::bind(&addr).await.unwrap(),
-    app.into_make_service(),
-  )
-  .await
-  .unwrap();
+  let listener = tokio::net::TcpListener::bind(&addr).await?;
+
+  tracing::info!("listening on http://{}", &addr);
+
+  tokio::spawn(async move { axum::serve(listener, app).await });
+
+  tokio::signal::ctrl_c().await?;
+  tracing::info!("shutting down");
+
+  #[cfg(feature = "chrome-tracing")]
+  {
+    guard.flush();
+    tracing::info!("chrome tracing data written");
+  }
 
   Ok(())
 }
