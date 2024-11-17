@@ -27,5 +27,23 @@ pub fn App() -> impl IntoView {
 pub fn HomePage() -> impl IntoView {
   view! {
     <p>"Hello, World!"</p>
+
+    <TestIsland />
+  }
+}
+
+#[island]
+pub fn TestIsland() -> impl IntoView {
+  let (count, set_count) = create_signal(0);
+
+  view! {
+    <div>
+      <p>"Count: " { count }</p>
+      <button
+        on:click={move |_| set_count(count.get() + 1)}
+      >
+        "Increment"
+      </button>
+    </div>
   }
 }
