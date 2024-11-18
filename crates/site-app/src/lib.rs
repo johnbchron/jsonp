@@ -1,4 +1,6 @@
-use leptos::{config::LeptosOptions, prelude::*};
+use leptos::{
+  config::LeptosOptions, logging::log, prelude::*, task::spawn_local,
+};
 use leptos_meta::*;
 use leptos_router::{
   components::{Route, Router, Routes},
@@ -41,6 +43,159 @@ pub fn App() -> impl IntoView {
 #[component]
 pub fn HomePage() -> impl IntoView {
   view! {
-    <p>"Hello, World!"</p>
+    <main class="w-screen h-screen">
+      <Header/>
+      <MainInput/>
+    </main>
   }
+}
+
+#[component]
+pub fn Header() -> impl IntoView {
+  view! {
+    <div class="h-10 bg-backgroundSecondary px-4 flex items-center border-b border-gray-7">
+      <p class="text-lg">"JSON Prettifier"</p>
+      <div class="flex-grow"/>
+      <p class="text-sm text-content3">"v0.1.0"</p>
+    </div>
+  }
+}
+
+#[island]
+pub fn MainInput() -> impl IntoView {
+  let textarea_class = "w-full h-full py-1 px-2 bg-backgroundSecondary \
+                        text-sm text-content1 resize-none border \
+                        border-gray-6 outline-none box-border font-mono \
+                        relative";
+  let placeholder = "Paste JSON here...";
+
+  let (input_contents, set_input_contents) = signal(String::new());
+  let sync_input_contents = move |new_contents: String| {
+    set_input_contents(new_contents.clone());
+    provide_context(CopyContents(new_contents));
+  };
+
+  let textarea_input_callback = move |event| {
+    sync_input_contents(event_target_value(&event));
+    log!("input contents updated");
+  };
+
+  let formatted_json: Memo<Option<Result<String, String>>> =
+    Memo::new(move |_| {
+      log!("formatting json...");
+      let input_contents = input_contents.get();
+      if input_contents.is_empty() {
+        log!("input is empty");
+        return None;
+      }
+
+      let formatted_json = format_json_string(&input_contents);
+      log!("finished formatting json");
+      Some(formatted_json)
+    });
+
+  let json_is_already_formatted = move || match formatted_json.get() {
+    // formatting completed, perform comparison
+    Some(Ok(v)) => Some(Some(v == input_contents.get())),
+    // formatting failed
+    Some(Err(_)) => Some(None),
+    // no text
+    None => None,
+  };
+
+  let format_button_class = move || {
+    format!(
+      "btn border border-gray-7 rounded {}",
+      match json_is_already_formatted() {
+        Some(Some(true)) => "btn-success",
+        Some(Some(false)) => "btn-primary",
+        Some(None) => "btn-error",
+        None => "",
+      }
+    )
+  };
+  let format_button_disabled = move || match json_is_already_formatted() {
+    // already formatted or no text
+    Some(Some(true)) | None => true,
+    _ => false,
+  };
+  let format_button_callback = move |_| {
+    log!("format button clicked");
+    match formatted_json.get() {
+      Some(Ok(v)) => sync_input_contents(v),
+      Some(Err(e)) => {
+        log!("could not format: formatting failed with {e}");
+      }
+      None => {
+        log!("could not format: no text");
+      }
+    }
+  };
+
+  view! {
+    <div class="relative w-full h-[calc(100%-2.5rem-2px)] p-4">
+      <textarea
+        class=textarea_class placeholder=placeholder
+        autocapitalize="off" spellcheck="false" autofocus="true"
+        on:input=textarea_input_callback
+        prop:value=input_contents
+      />
+      <div class="absolute right-8 bottom-8 flex flex-row gap-2">
+        <CopyButton />
+        <button
+          class=format_button_class
+          disabled=format_button_disabled
+          on:click=format_button_callback
+        >
+          "Format"
+        </button>
+      </div>
+    </div>
+  }
+}
+
+#[derive(Clone)]
+pub struct CopyContents(String);
+
+#[island]
+pub fn CopyButton() -> impl IntoView {
+  let click_action = {
+    move |_| {
+      let text: Option<CopyContents> = use_context();
+      let Some(CopyContents(text)) = text else {
+        log!("no text to copy");
+        return;
+      };
+
+      let clipboard = web_sys::window().unwrap().navigator().clipboard();
+      let promise = clipboard.write_text(&text);
+      spawn_local(async move {
+        let _ =
+          wasm_bindgen_futures::JsFuture::from(promise)
+            .await
+            .map_err(|e| {
+              log!("failed to copy to clipboard: {e:?}");
+            });
+        log!("copied to clipboard");
+      });
+    }
+  };
+
+  view! {
+    <button class="btn border border-gray-7" on:click=click_action>
+      "Copy"
+    </button>
+  }
+}
+
+fn format_json_string(json_string: &str) -> Result<String, String> {
+  let json_value = serde_json::from_str::<serde_json::Value>(json_string)
+    .map_err(|e| {
+      log!("failed to parse with: {e}");
+      e.to_string()
+    })?;
+  serde_json::to_string_pretty(&json_value).map_err(|e| {
+    log!("failed to format with: {e}");
+    e.to_string()
+  })
 }

@@ -16,6 +16,7 @@ leptos_axum = { version = "0.7.0-rc1", features = ["tracing"] }
 leptos_meta = { version = "0.7.0-rc1", features = ["tracing"] }
 leptos_router = { version = "0.7.0-rc1", features = ["nightly", "tracing"] }
 
+serde = { version = "1" }
 axum = { version = "0.7", features = ["macros", "tracing"] }
 color-eyre = "0.6"
 console_error_panic_hook = "0.1.7"
