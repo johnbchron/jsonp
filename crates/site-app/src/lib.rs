@@ -14,6 +14,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
       <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta name="description" content="A simple JSON prettifier, written in Rust."/>
         <meta name="theme-color" content="#1c1c1c"/>
 
         <AutoReload options=options.clone()/>
