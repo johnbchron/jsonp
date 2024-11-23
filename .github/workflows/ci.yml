@@ -1,0 +1,21 @@
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/flake-checker-action@main
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Run `nix build`
+        run: nix build ".#container" -L && docker load < result && flyctl deploy --local-only -i site-server
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
