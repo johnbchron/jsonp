@@ -81,20 +81,16 @@ pub fn MainInput() -> impl IntoView {
 
   let textarea_input_callback = move |event| {
     sync_input_contents(event_target_value(&event));
-    log!("input contents updated");
   };
 
   let formatted_json: Memo<Option<Result<String, String>>> =
     Memo::new(move |_| {
-      log!("formatting json...");
       let input_contents = input_contents.get();
       if input_contents.is_empty() {
-        log!("input is empty");
         return None;
       }
 
       let formatted_json = format_json_string(&input_contents);
-      log!("finished formatting json");
       Some(formatted_json)
     });
 
@@ -124,15 +120,8 @@ pub fn MainInput() -> impl IntoView {
     _ => false,
   };
   let format_button_callback = move |_| {
-    log!("format button clicked");
-    match formatted_json.get() {
-      Some(Ok(v)) => sync_input_contents(v),
-      Some(Err(e)) => {
-        log!("could not format: formatting failed with {e}");
-      }
-      None => {
-        log!("could not format: no text");
-      }
+    if let Some(Ok(v)) = formatted_json.get() {
+      sync_input_contents(v)
     }
   };
 
@@ -167,7 +156,6 @@ pub fn CopyButton() -> impl IntoView {
     move |_| {
       let text: Option<CopyContents> = use_context();
       let Some(CopyContents(text)) = text else {
-        log!("no text to copy");
         return;
       };
 
@@ -180,7 +168,6 @@ pub fn CopyButton() -> impl IntoView {
             .map_err(|e| {
               log!("failed to copy to clipboard: {e:?}");
             });
-        log!("copied to clipboard");
       });
     }
   };
@@ -194,12 +181,6 @@ pub fn CopyButton() -> impl IntoView {
 
 fn format_json_string(json_string: &str) -> Result<String, String> {
   let json_value = serde_json::from_str::<serde_json::Value>(json_string)
-    .map_err(|e| {
-      log!("failed to parse with: {e}");
-      e.to_string()
-    })?;
-  serde_json::to_string_pretty(&json_value).map_err(|e| {
-    log!("failed to format with: {e}");
-    e.to_string()
-  })
+    .map_err(|e| e.to_string())?;
+  serde_json::to_string_pretty(&json_value).map_err(|e| e.to_string())
 }
