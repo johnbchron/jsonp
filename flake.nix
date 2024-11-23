@@ -9,12 +9,11 @@
       url = "https://flakehub.com/f/ipetkov/crane/0.16.1.tar.gz";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    cargo-leptos-src = { url = "github:leptos-rs/cargo-leptos"; flake = false; };
     nix-filter.url = "github:numtide/nix-filter";
     devshell.url = "github:numtide/devshell";
   };
 
-  outputs = { nixpkgs, rust-overlay, crane, cargo-leptos-src, nix-filter, flake-utils, devshell, ... }:
+  outputs = { nixpkgs, rust-overlay, crane, nix-filter, flake-utils, devshell, ... }:
     flake-utils.lib.eachDefaultSystem (system: let
       # set up `pkgs` with rust-overlay
       overlays = [
@@ -55,12 +54,6 @@
       
       # configure crane to use our toolchain
       craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
-
-      # build cargo-leptos from source
-      cargo-leptos = (import ./nix/cargo-leptos.nix) {
-        inherit pkgs craneLib;
-        cargo-leptos = cargo-leptos-src;
-      };
 
       # download and install JS packages used by tailwind
       style-js-deps = (import ./nix/style-js-deps.nix) {
@@ -126,12 +119,11 @@
       # build the binary and bundle using cargo leptos
       site-server = craneLib.buildPackage (common-args // {
         # add inputs needed for leptos build
-        nativeBuildInputs = common-args.nativeBuildInputs ++ [
+        nativeBuildInputs = common-args.nativeBuildInputs ++ (with pkgs; [
           cargo-leptos
           # used by cargo-leptos for styling
-          pkgs.dart-sass
-          pkgs.tailwindcss
-       ];
+          dart-sass tailwindcss
+       ]);
 
         # link the style packages node_modules into the build directory
         preBuild = ''
