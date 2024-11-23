@@ -14,10 +14,14 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
       <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta name="theme-color" content="#1c1c1c"/>
+
         <AutoReload options=options.clone()/>
         <HydrationScripts options=options.clone() islands=true/>
         <HashedStylesheet options=options.clone() id="leptos"/>
         <link rel="shortcut icon" type="image/ico" href="/favicon.ico"/>
+
+        <Title text="JSON Prettifier"/>
       </head>
       <body>
         <App/>
@@ -56,7 +60,7 @@ pub fn Header() -> impl IntoView {
     <div class="h-10 bg-backgroundSecondary px-4 flex items-center border-b border-gray-7">
       <p class="text-lg">"JSON Prettifier"</p>
       <div class="flex-grow"/>
-      <p class="text-sm text-content3">"v0.1.0"</p>
+      <p class="text-sm text-content2">"v0.1.0"</p>
     </div>
   }
 }
