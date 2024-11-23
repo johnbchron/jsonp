@@ -240,6 +240,8 @@
           # used by cargo-leptos for styling
           dart-sass
           tailwindcss
+          # we need tailwind packages; ugh
+          yarn
         ])
           ++ common-args.buildInputs
           ++ common-args.nativeBuildInputs;
