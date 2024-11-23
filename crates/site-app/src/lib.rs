@@ -8,6 +8,9 @@ use leptos_router::{
 };
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
+  // Provides context that manages stylesheets, titles, meta tags, etc.
+  provide_meta_context();
+
   view! {
     <!DOCTYPE html>
     <html lang="en">
@@ -20,7 +23,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <AutoReload options=options.clone()/>
         <HydrationScripts options=options.clone() islands=true/>
         <HashedStylesheet options=options.clone() id="leptos"/>
-        <link rel="shortcut icon" type="image/ico" href="/favicon.ico"/>
+        <link rel="shortcut icon" type="image/ico" href="/favicon.png"/>
 
         <Title text="JSON Prettifier"/>
       </head>
@@ -33,9 +36,6 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 
 #[component]
 pub fn App() -> impl IntoView {
-  // Provides context that manages stylesheets, titles, meta tags, etc.
-  provide_meta_context();
-
   view! {
     <Router>
       <Routes fallback=|| "Page not found.".into_view()>
