@@ -61,7 +61,14 @@ pub fn Header() -> impl IntoView {
     <div class="h-10 bg-backgroundSecondary px-4 flex items-center border-b border-gray-7">
       <p class="text-lg">"JSON Prettifier"</p>
       <div class="flex-grow"/>
-      <p class="text-sm text-content2">"v0.1.0"</p>
+      <a
+        class="text-sm text-content2 underline hover:text-content1 transition-colors"
+        href="https://github.com/johnbchron/jsonp"
+        target="_blank" rel="noopener noreferrer"
+      >
+        "v"
+        { version::version!() }
+      </a>
     </div>
   }
 }
