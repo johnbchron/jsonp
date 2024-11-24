@@ -1,3 +1,5 @@
+mod header;
+
 use leptos::{
   config::LeptosOptions, logging::log, prelude::*, task::spawn_local,
 };
@@ -6,6 +8,8 @@ use leptos_router::{
   components::{Route, Router, Routes},
   path,
 };
+
+use self::header::Header;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
   // Provides context that manages stylesheets, titles, meta tags, etc.
@@ -52,24 +56,6 @@ pub fn HomePage() -> impl IntoView {
       <Header/>
       <MainInput/>
     </main>
-  }
-}
-
-#[component]
-pub fn Header() -> impl IntoView {
-  view! {
-    <div class="h-10 bg-backgroundSecondary px-4 flex items-center border-b border-gray-7">
-      <p class="text-lg">"JSON Prettifier"</p>
-      <div class="flex-grow"/>
-      <a
-        class="text-sm text-content2 underline hover:text-content1 transition-colors"
-        href="https://github.com/johnbchron/jsonp"
-        target="_blank" rel="noopener noreferrer"
-      >
-        "v"
-        { version::version!() }
-      </a>
-    </div>
   }
 }
 
