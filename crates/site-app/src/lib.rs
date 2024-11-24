@@ -1,15 +1,17 @@
+mod copy_button;
 mod header;
 
-use leptos::{
-  config::LeptosOptions, logging::log, prelude::*, task::spawn_local,
-};
+use leptos::{config::LeptosOptions, prelude::*};
 use leptos_meta::*;
 use leptos_router::{
   components::{Route, Router, Routes},
   path,
 };
 
-use self::header::Header;
+use self::{
+  copy_button::{CopyButton, CopyContents},
+  header::Header,
+};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
   // Provides context that manages stylesheets, titles, meta tags, etc.
@@ -70,7 +72,7 @@ pub fn MainInput() -> impl IntoView {
   let (input_contents, set_input_contents) = signal(String::new());
   let sync_input_contents = move |new_contents: String| {
     set_input_contents(new_contents.clone());
-    provide_context(CopyContents(new_contents));
+    provide_context(CopyContents::new(new_contents));
   };
 
   let textarea_input_callback = move |event| {
@@ -138,38 +140,6 @@ pub fn MainInput() -> impl IntoView {
         </button>
       </div>
     </div>
-  }
-}
-
-#[derive(Clone)]
-pub struct CopyContents(String);
-
-#[island]
-pub fn CopyButton() -> impl IntoView {
-  let click_action = {
-    move |_| {
-      let text: Option<CopyContents> = use_context();
-      let Some(CopyContents(text)) = text else {
-        return;
-      };
-
-      let clipboard = web_sys::window().unwrap().navigator().clipboard();
-      let promise = clipboard.write_text(&text);
-      spawn_local(async move {
-        let _ =
-          wasm_bindgen_futures::JsFuture::from(promise)
-            .await
-            .map_err(|e| {
-              log!("failed to copy to clipboard: {e:?}");
-            });
-      });
-    }
-  };
-
-  view! {
-    <button class="btn border border-gray-7" on:click=click_action>
-      "Copy"
-    </button>
   }
 }
 
