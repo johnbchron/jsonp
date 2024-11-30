@@ -2,7 +2,7 @@ use leptos::{logging::log, prelude::*};
 use reactive_stores::Store;
 use wasm_bindgen_futures::spawn_local;
 
-use crate::{MainState, MainStateStoreFields};
+use crate::state::{MainState, MainStateStoreFields};
 
 #[island]
 pub fn CopyButton() -> impl IntoView {
