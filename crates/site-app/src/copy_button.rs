@@ -1,21 +1,19 @@
 use leptos::{logging::log, prelude::*};
+use reactive_stores::Store;
 use wasm_bindgen_futures::spawn_local;
 
-#[derive(Clone)]
-pub struct CopyContents(String);
-
-impl CopyContents {
-  pub fn new(text: String) -> Self { Self(text) }
-}
+use crate::{MainState, MainStateStoreFields};
 
 #[island]
 pub fn CopyButton() -> impl IntoView {
   let click_action = {
     move |_| {
-      let text: Option<CopyContents> = use_context();
-      let Some(CopyContents(text)) = text else {
+      let main_state = expect_context::<Store<MainState>>();
+      let text = main_state.input_contents().get();
+
+      if text.is_empty() {
         return;
-      };
+      }
 
       let clipboard = web_sys::window().unwrap().navigator().clipboard();
       let promise = clipboard.write_text(&text);

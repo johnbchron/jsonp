@@ -7,11 +7,9 @@ use leptos_router::{
   components::{Route, Router, Routes},
   path,
 };
+use reactive_stores::Store;
 
-use self::{
-  copy_button::{CopyButton, CopyContents},
-  header::Header,
-};
+use self::{copy_button::CopyButton, header::Header};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
   // Provides context that manages stylesheets, titles, meta tags, etc.
@@ -56,8 +54,122 @@ pub fn HomePage() -> impl IntoView {
   view! {
     <main class="w-screen h-screen">
       <Header/>
-      <MainInput/>
+      <StateProvider>
+        <div class="relative w-full h-[calc(100%-2.5rem-2px)] p-4">
+          <MainInput />
+          <div class="absolute right-8 bottom-8 flex flex-row gap-2">
+            <CopyButton />
+            <FormatButton />
+          </div>
+        </div>
+      </StateProvider>
     </main>
+  }
+}
+
+#[derive(Clone, Store, PartialEq, Eq)]
+pub enum FormattingState {
+  NoText,
+  SuccessfullyFormatted(String),
+  FailedToFormat(String),
+}
+
+#[derive(Clone, Store, PartialEq, Eq)]
+pub enum ApplyButtonState {
+  NoText,
+  FormattingError,
+  AlreadyApplied,
+  ReadyToApply,
+}
+
+#[derive(Clone, Store)]
+pub struct MainState {
+  input_contents: String,
+}
+
+#[derive(Clone)]
+pub struct DerivedState {
+  formatted_json:     Memo<FormattingState>,
+  apply_button_state: Memo<ApplyButtonState>,
+}
+
+#[island]
+pub fn StateProvider(children: Children) -> impl IntoView {
+  let main_state = Store::new(MainState {
+    input_contents: String::new(),
+  });
+
+  let formatted_json = Memo::new(move |_| {
+    let input_contents = main_state.input_contents().get();
+    if input_contents.is_empty() {
+      return FormattingState::NoText;
+    }
+    match format_json_string(&input_contents) {
+      Ok(v) => FormattingState::SuccessfullyFormatted(v),
+      Err(e) => FormattingState::FailedToFormat(e),
+    }
+  });
+
+  let apply_button_state = Memo::new(move |_| match formatted_json.get() {
+    FormattingState::NoText => ApplyButtonState::NoText,
+    FormattingState::FailedToFormat(_) => ApplyButtonState::FormattingError,
+    FormattingState::SuccessfullyFormatted(v)
+      if v == main_state.input_contents().get() =>
+    {
+      ApplyButtonState::AlreadyApplied
+    }
+    FormattingState::SuccessfullyFormatted(_) => ApplyButtonState::ReadyToApply,
+  });
+
+  let derived_state = DerivedState {
+    formatted_json,
+    apply_button_state,
+  };
+
+  provide_context(main_state);
+  provide_context(derived_state);
+
+  children()
+}
+
+#[island]
+pub fn FormatButton() -> impl IntoView {
+  let main_state = expect_context::<Store<MainState>>();
+  let derived_state = expect_context::<DerivedState>();
+
+  let format_button_base_class = "btn border border-gray-7 rounded";
+  let format_button_class = move || {
+    let extra_class = match derived_state.apply_button_state.get() {
+      ApplyButtonState::ReadyToApply => "btn-primary",
+      ApplyButtonState::AlreadyApplied => "btn-success",
+      ApplyButtonState::FormattingError => "btn-error",
+      _ => "",
+    };
+    format!("{} {}", format_button_base_class, extra_class)
+  };
+  let format_button_disabled = move || {
+    !matches!(
+      derived_state.apply_button_state.get(),
+      ApplyButtonState::ReadyToApply
+    )
+  };
+
+  let format_button_callback = move |_| {
+    if let FormattingState::SuccessfullyFormatted(v) =
+      derived_state.formatted_json.get()
+    {
+      main_state.input_contents().set(v);
+    }
+  };
+
+  view! {
+    <button
+      class=format_button_class
+      disabled=format_button_disabled
+      on:click=format_button_callback
+    >
+      "Format"
+    </button>
   }
 }
 
@@ -69,77 +181,13 @@ pub fn MainInput() -> impl IntoView {
                         relative";
   let placeholder = "Paste JSON here...";
 
-  let (input_contents, set_input_contents) = signal(String::new());
-  let sync_input_contents = move |new_contents: String| {
-    set_input_contents(new_contents.clone());
-    provide_context(CopyContents::new(new_contents));
-  };
-
-  let textarea_input_callback = move |event| {
-    sync_input_contents(event_target_value(&event));
-  };
-
-  let formatted_json: Memo<Option<Result<String, String>>> =
-    Memo::new(move |_| {
-      let input_contents = input_contents.get();
-      if input_contents.is_empty() {
-        return None;
-      }
-
-      let formatted_json = format_json_string(&input_contents);
-      Some(formatted_json)
-    });
-
-  let json_is_already_formatted = move || match formatted_json.get() {
-    // formatting completed, perform comparison
-    Some(Ok(v)) => Some(Some(v == input_contents.get())),
-    // formatting failed
-    Some(Err(_)) => Some(None),
-    // no text
-    None => None,
-  };
-
-  let format_button_class = move || {
-    format!(
-      "btn border border-gray-7 rounded {}",
-      match json_is_already_formatted() {
-        Some(Some(true)) => "btn-success",
-        Some(Some(false)) => "btn-primary",
-        Some(None) => "btn-error",
-        None => "",
-      }
-    )
-  };
-  let format_button_disabled = move || match json_is_already_formatted() {
-    // already formatted or no text
-    Some(Some(true)) | None => true,
-    _ => false,
-  };
-  let format_button_callback = move |_| {
-    if let Some(Ok(v)) = formatted_json.get() {
-      sync_input_contents(v)
-    }
-  };
+  let main_state = expect_context::<Store<MainState>>();
 
   view! {
-    <div class="relative w-full h-[calc(100%-2.5rem-2px)] p-4">
-      <textarea
-        class=textarea_class placeholder=placeholder
-        autocapitalize="off" spellcheck="false" autofocus="true"
-        on:input=textarea_input_callback
-        prop:value=input_contents
-      />
-      <div class="absolute right-8 bottom-8 flex flex-row gap-2">
-        <CopyButton />
-        <button
-          class=format_button_class
-          disabled=format_button_disabled
-          on:click=format_button_callback
-        >
-          "Format"
-        </button>
-      </div>
-    </div>
+    <textarea
+      class=textarea_class placeholder=placeholder autocapitalize="off"
+      spellcheck="false" autofocus="true" bind:value=main_state.input_contents()
+    />
   }
 }
 
