@@ -12,24 +12,26 @@ pub fn FormatButton() -> impl IntoView {
   let main_state = expect_context::<Store<MainState>>();
   let derived_state = expect_context::<DerivedState>();
 
-  let format_button_base_class = "btn border border-gray-7 rounded";
-  let format_button_class = move || {
-    let extra_class = match derived_state.apply_button_state.get() {
+  let class = move || {
+    format!("btn border border-gray-7 {}", match derived_state
+      .apply_button_state
+      .get()
+    {
       ApplyButtonState::ReadyToApply => "btn-primary",
       ApplyButtonState::AlreadyApplied => "btn-success",
       ApplyButtonState::FormattingError => "btn-error",
       _ => "",
-    };
-    format!("{} {}", format_button_base_class, extra_class)
+    })
   };
-  let format_button_disabled = move || {
+
+  let disabled = move || {
     !matches!(
       derived_state.apply_button_state.get(),
       ApplyButtonState::ReadyToApply
     )
   };
 
-  let format_button_callback = move |_| {
+  let callback = move |_| {
     if let FormattingState::SuccessfullyFormatted(v) =
       derived_state.formatted_json.get()
     {
@@ -38,11 +40,7 @@ pub fn FormatButton() -> impl IntoView {
   };
 
   view! {
-    <button
-      class=format_button_class
-      disabled=format_button_disabled
-      on:click=format_button_callback
-    >
+    <button class=class disabled=disabled on:click=callback>
       "Format"
     </button>
   }

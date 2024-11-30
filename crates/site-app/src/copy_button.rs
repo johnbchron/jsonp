@@ -7,31 +7,30 @@ use crate::state::{MainState, MainStateStoreFields};
 /// A button that copies the input contents to the clipboard.
 #[island]
 pub fn CopyButton() -> impl IntoView {
-  let click_action = {
-    move |_| {
-      let main_state = expect_context::<Store<MainState>>();
-      let text = main_state.input_contents().get();
+  let class = "btn border border-gray-7";
 
-      if text.is_empty() {
-        return;
-      }
+  let main_state = expect_context::<Store<MainState>>();
 
-      let clipboard = web_sys::window().unwrap().navigator().clipboard();
-      let promise = clipboard.write_text(&text);
-      spawn_local(async move {
-        let _ =
-          wasm_bindgen_futures::JsFuture::from(promise)
-            .await
-            .map_err(|e| {
-              log!("failed to copy to clipboard: {e:?}");
-            });
-      });
-    }
-  };
+  let click_action =
+    move |_| main_state.input_contents().with(|t| copy_to_clipboard(t));
+
+  let disabled = move || main_state.input_contents().with(|t| t.is_empty());
 
   view! {
-    <button class="btn border border-gray-7" on:click=click_action>
+    <button class=class on:click=click_action disabled=disabled>
       "Copy"
     </button>
   }
+}
+
+fn copy_to_clipboard(text: &str) {
+  let clipboard = web_sys::window().unwrap().navigator().clipboard();
+  let promise = clipboard.write_text(text);
+  spawn_local(async move {
+    let _ = wasm_bindgen_futures::JsFuture::from(promise)
+      .await
+      .map_err(|e| {
+        log!("failed to copy to clipboard: {e:?}");
+      });
+  });
 }
