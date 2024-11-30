@@ -4,6 +4,7 @@ use wasm_bindgen_futures::spawn_local;
 
 use crate::state::{MainState, MainStateStoreFields};
 
+/// A button that copies the input contents to the clipboard.
 #[island]
 pub fn CopyButton() -> impl IntoView {
   let click_action = {

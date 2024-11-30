@@ -16,6 +16,7 @@ use self::{
   main_input::MainInput, state::StateProvider,
 };
 
+/// The HTML shell used to render the app.
 pub fn shell(options: LeptosOptions) -> impl IntoView {
   // Provides context that manages stylesheets, titles, meta tags, etc.
   provide_meta_context();
@@ -43,6 +44,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
   }
 }
 
+/// The main app component.
 #[component]
 pub fn App() -> impl IntoView {
   view! {
@@ -54,6 +56,7 @@ pub fn App() -> impl IntoView {
   }
 }
 
+/// The home page.
 #[component]
 pub fn HomePage() -> impl IntoView {
   view! {
@@ -72,6 +75,7 @@ pub fn HomePage() -> impl IntoView {
   }
 }
 
+/// Formats a JSON string.
 fn format_json_string(json_string: &str) -> Result<String, String> {
   let json_value = serde_json::from_str::<serde_json::Value>(json_string)
     .map_err(|e| e.to_string())?;

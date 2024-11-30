@@ -3,6 +3,7 @@ use reactive_stores::Store;
 
 use crate::state::{MainState, MainStateStoreFields};
 
+/// The main input textarea.
 #[island]
 pub fn MainInput() -> impl IntoView {
   let textarea_class = "w-full h-full py-1 px-2 bg-backgroundSecondary \

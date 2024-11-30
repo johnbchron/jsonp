@@ -6,6 +6,7 @@ use crate::state::{
   MainStateStoreFields,
 };
 
+/// A button that formats the input JSON.
 #[island]
 pub fn FormatButton() -> impl IntoView {
   let main_state = expect_context::<Store<MainState>>();

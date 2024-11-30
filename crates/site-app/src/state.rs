@@ -3,6 +3,7 @@ use reactive_stores::Store;
 
 use crate::format_json_string;
 
+/// The state of the JSON formatting process.
 #[derive(Clone, Store, PartialEq, Eq)]
 pub enum FormattingState {
   NoText,
@@ -10,6 +11,7 @@ pub enum FormattingState {
   FailedToFormat(String),
 }
 
+/// The state of the apply button.
 #[derive(Clone, Store, PartialEq, Eq)]
 pub enum ApplyButtonState {
   NoText,
@@ -18,17 +20,22 @@ pub enum ApplyButtonState {
   ReadyToApply,
 }
 
+/// The main state of the app. These items are set directly by user input.
 #[derive(Clone, Store)]
 pub struct MainState {
   pub input_contents: String,
 }
 
+/// The derived state of the app. These items are calculated from the main
+/// state.
 #[derive(Clone)]
 pub struct DerivedState {
   pub formatted_json:     Memo<FormattingState>,
   pub apply_button_state: Memo<ApplyButtonState>,
 }
 
+/// The state provider for the app. Provides the main and derived states by
+/// context.
 #[island]
 pub fn StateProvider(children: Children) -> impl IntoView {
   let main_state = Store::new(MainState {
